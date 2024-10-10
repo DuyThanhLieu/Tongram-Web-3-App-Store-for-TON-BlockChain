@@ -11,7 +11,11 @@ pipeline {
         JENKINS_ADDRESS = 'jenkins.playgroundvina.com'
         
         // Command to run on remote server
-        COMMANDS = './BS_Auto.bat' 
+        COMMANDS = './BS_Auto.bat'
+        
+        // Telegram bot details
+        CHAT_ID = '-4520276469'  // Thay bằng chat ID của nhóm
+        BOT_TOKEN = '8085219018:AAHSTNao6k9OucZc15LQ476N-039N8NR7WI'  // Thay bằng token của bot Telegram
     }
     stages {
         stage('Checkout code') {
@@ -40,6 +44,19 @@ pipeline {
                 }
             }
         }
+        stage('Notify Telegram') {
+            steps {
+                script {
+                    def message = "🔧 Jenkins Build #${env.BUILD_NUMBER}\n" +
+                                  "✅ Status: ${currentBuild.currentResult}\n" +
+                                  "🕒 Time: ${currentBuild.durationString}\n" +
+                                  "🔗 Link: ${env.BUILD_URL}"
+
+                    // Send notification to Telegram
+                    sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${message}'"
+                }
+            }
+        }
     }
     post {
         always {
@@ -48,8 +65,7 @@ pipeline {
                 def status = currentBuild.result ?: 'SUCCESS'
                 echo "Build status: ${status}"
                 
-                // Optional cleanup: only do this if you are sure
-                // what needs to be cleaned up.
+                // Optional cleanup
                 echo "Skipping cleanup for safety."
             }
         }

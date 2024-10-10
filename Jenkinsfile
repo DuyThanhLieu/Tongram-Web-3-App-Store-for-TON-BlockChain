@@ -1,36 +1,42 @@
 pipeline {
     agent any
     environment {
-        // Github
+        // Github repository details
         GITHUB_URL = 'https://github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain'
         REPO_NAME = 'Tongram-Web-3-App-Store-for-TON-BlockChain'
-        SERVER_PATH = 'Tongram-Web-3-App-Store-for-TON-BlockChain' // Cập nhật đường dẫn
         BRANCH_NAME = 'main'
+        
+        // Jenkins details
         JENKINS_USERNAME = 'DuyThanhLieu'  
-        JENKINS_ADDRESS = 'https://jenkins.playgroundvina.com/'  
-        COMMANDS = './BS_Auto.bat'  
+        JENKINS_ADDRESS = 'jenkins.playgroundvina.com'
+        
+        // Command to run on remote server
+        COMMANDS = './BS_Auto.bat' 
     }
     stages {
         stage('Checkout code') {
             steps {
+                // Clone the specified branch from the repository
                 git branch: "${BRANCH_NAME}", url: "${GITHUB_URL}"
             }
         }
         stage('Deploying...') {
             when {
-                anyOf {
-                    branch 'master'
-                    branch 'main'
-                }
+                branch 'main' // Only deploy from the main branch
             }
             steps {
-                dir("${SERVER_PATH}") {
-                    script {
-                        echo "Deploying to '${BRANCH_NAME}'..."
-                        sh 'git pull'
-                        sh "sudo make deploy repo_name=${REPO_NAME} branch_name=${BRANCH_NAME}"
-                        sh "ssh -o StrictHostKeyChecking=no ${JENKINS_USERNAME}@${JENKINS_ADDRESS} '${COMMANDS}'"
-                    }
+                script {
+                    echo "Deploying to '${BRANCH_NAME}'..."
+                    
+                    // Run deployment command on the remote server
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ${JENKINS_USERNAME}@${JENKINS_ADDRESS} '
+                        cd ${REPO_NAME} &&
+                        git pull &&
+                        sudo make deploy repo_name=${REPO_NAME} branch_name=${BRANCH_NAME} &&
+                        ${COMMANDS}
+                    '
+                    """
                 }
             }
         }
@@ -38,9 +44,13 @@ pipeline {
     post {
         always {
             script {
+                // Get the build result and print it
                 def status = currentBuild.result ?: 'SUCCESS'
                 echo "Build status: ${status}"
-                sh "rm -rf ./* ./.??*"
+                
+                // Optional cleanup: only do this if you are sure
+                // what needs to be cleaned up.
+                echo "Skipping cleanup for safety."
             }
         }
     }

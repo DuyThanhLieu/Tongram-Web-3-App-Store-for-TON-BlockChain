@@ -25,7 +25,7 @@ pipeline {
         stage('Deploying...') {
             when {
                 anyOf {
-                    branch 'master'
+                    // branch 'master'
                     branch 'main'
                 }
             }

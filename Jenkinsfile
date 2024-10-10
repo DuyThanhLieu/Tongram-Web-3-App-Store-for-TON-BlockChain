@@ -5,7 +5,9 @@ pipeline {
         GITHUB_URL = 'https://github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain'
         REPO_NAME = 'Tongram-Web-3-App-Store-for-TON-BlockChain'
         BRANCH_NAME = 'main'
-        
+        JENKINS_USERNAME = 'DuyThanhLieu'  
+         JENKINS_ADDRESS = 'https://jenkins.playgroundvina.com/' 
+         COMMANDS = './BS_Auto.bat' 
         // Jenkins details
         JENKINS_USERNAME = 'DuyThanhLieu'  
         JENKINS_ADDRESS = 'jenkins.playgroundvina.com'

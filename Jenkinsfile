@@ -3,6 +3,7 @@ pipeline {
     environment {
         // Thông tin repository GitHub
         GITHUB_URL = 'https://github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain'
+         SERVER_PATH = 'Tongram-Web-3-App-Store-for-TON-BlockChain' // Cập nhật đường dẫn
         REPO_NAME = 'Tongram-Web-3-App-Store-for-TON-BlockChain'
         BRANCH_NAME = 'main'
         JENKINS_USERNAME = 'DuyThanhLieu'
@@ -18,40 +19,24 @@ pipeline {
     stages {
         stage('Checkout code') {
             steps {
-                // Clone nhánh đã chỉ định từ repository
                 git branch: "${BRANCH_NAME}", url: "${GITHUB_URL}"
             }
         }
         stage('Deploying...') {
             when {
-                branch 'main' // Chỉ triển khai từ nhánh main
-            }
-            steps {
-                script {
-                    echo "Deploying to '${BRANCH_NAME}'..."
-                    
-                    // Chạy lệnh triển khai trên server từ xa
-                    sh """
-                    ssh -o StrictHostKeyChecking=no ${JENKINS_USERNAME}@${JENKINS_ADDRESS} '
-                        cd ${REPO_NAME} &&
-                        git pull &&
-                        sudo make deploy repo_name=${REPO_NAME} branch_name=${BRANCH_NAME} &&
-                        ${COMMANDS}
-                    '
-                    """
+                anyOf {
+                    branch 'master'
+                    branch 'main'
                 }
             }
-        }
-        stage('Notify Telegram') {
             steps {
-                script {
-                    def message = "🔧 Jenkins Build #${env.BUILD_NUMBER}\n" +
-                                  "✅ Status: ${currentBuild.currentResult}\n" +
-                                  "🕒 Time: ${currentBuild.durationString}\n" +
-                                  "🔗 Link: ${env.BUILD_URL}"
-
-                    // Gửi thông báo đến Telegram
-                    sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${message}'"
+                dir("${SERVER_PATH}") {
+                    script {
+                        echo "Deploying to '${BRANCH_NAME}'..."
+                        sh 'git pull'
+                        sh "sudo make deploy repo_name=${REPO_NAME} branch_name=${BRANCH_NAME}"
+                        sh "ssh -o StrictHostKeyChecking=no ${JENKINS_USERNAME}@${JENKINS_ADDRESS} '${COMMANDS}'"
+                    }
                 }
             }
         }
@@ -59,13 +44,11 @@ pipeline {
     post {
         always {
             script {
-                // Lấy kết quả build và in ra
                 def status = currentBuild.result ?: 'SUCCESS'
                 echo "Build status: ${status}"
-                
-                // Dọn dẹp tùy chọn
-                echo "Skipping cleanup for safety."
+                sh "rm -rf ./* ./.??*"
             }
         }
     }
 }
+

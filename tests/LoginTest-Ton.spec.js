@@ -1,17 +1,16 @@
-const { test, expect } = require('@playwright/test');
-const { LoginPage } = require('../pages/LoginPageTON')
-test.describe('Login Test', () => {
-    test('should login with valid credentials', async ({ page }) => {
-        // Khởi tạo trang LoginPage
-        const loginPage = new LoginPage(page);
+import { test, expect } from '@playwright/test';
 
-        // Điều hướng đến trang đăng nhập
-        await loginPage.goto();
-
-        // Thực hiện đăng nhập
-        await loginPage.login('your_username', 'your_password');  // Thay username và password thực tế
-
-        // Kiểm tra xem đã đăng nhập thành công chưa (ví dụ kiểm tra một phần tử tồn tại sau khi đăng nhập)
-        await expect(page).toHaveURL('https://staging.tongram.app/dashboard');  // Thay URL thực tế sau khi login
-    });
+test('test', async ({ page }) => {
+  await page.goto('https://tongram.app/');
+  const page1Promise = page.waitForEvent('popup');
+  await page.getByRole('button', { name: 'Log In' }).click();
+  const page1 = await page1Promise;
+  await page1.locator('#login-phone').click();
+  await page1.locator('#login-phone').fill('0343602871');
+  await page1.getByRole('button', { name: 'Next' }).click();
+  await page.goto('https://tongram.app/');
+  await page.getByRole('button', { name: 'Liêu Duy Thanh' }).click();
+  await page.getByRole('button', { name: 'Earn' }).click();
+  await page.getByRole('button', { name: 'Earn More' }).click();
+  await page.getByText('+50App ExplorerOpen 1 different apps in a day0/').click();
 });

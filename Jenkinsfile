@@ -3,7 +3,7 @@ pipeline {
     environment {
         // Thông tin repository GitHub
         GITHUB_URL = 'https://github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain'
-         SERVER_PATH = 'Tongram-Web-3-App-Store-for-TON-BlockChain' // Cập nhật đường dẫn
+        SERVER_PATH = 'Tongram-Web-3-App-Store-for-TON-BlockChain' // Cập nhật đường dẫn
         REPO_NAME = 'Tongram-Web-3-App-Store-for-TON-BlockChain'
         BRANCH_NAME = 'main'
         JENKINS_USERNAME = 'DuyThanhLieu'
@@ -19,22 +19,24 @@ pipeline {
     stages {
         stage('Checkout code') {
             steps {
+                // Clone the specified branch from the repository
                 git branch: "${BRANCH_NAME}", url: "${GITHUB_URL}"
             }
         }
         stage('Deploying...') {
             when {
-                anyOf {
-                    // branch 'master'
-                    branch 'main'
-                }
+                branch 'main' // Chỉ deploy từ nhánh main
             }
             steps {
                 dir("${SERVER_PATH}") {
                     script {
                         echo "Deploying to '${BRANCH_NAME}'..."
                         sh 'git pull'
-                        sh "sudo make deploy repo_name=${REPO_NAME} branch_name=${BRANCH_NAME}"
+                        // Sử dụng đường dẫn đầy đủ cho lệnh make
+                        sh """
+                        sudo /usr/bin/make deploy repo_name=${REPO_NAME} branch_name=${BRANCH_NAME} > deploy.log 2>&1 || echo 'Deployment failed!'
+                        """
+                        // Thực hiện lệnh trên server từ xa
                         sh "ssh -o StrictHostKeyChecking=no ${JENKINS_USERNAME}@${JENKINS_ADDRESS} '${COMMANDS}'"
                     }
                 }
@@ -44,11 +46,16 @@ pipeline {
     post {
         always {
             script {
+                // Lấy kết quả build và in ra
                 def status = currentBuild.result ?: 'SUCCESS'
                 echo "Build status: ${status}"
+                
+                // Ghi lại nhật ký
+                sh "cat deploy.log" // In ra nhật ký deployment
+                
+                // Dọn dẹp
                 sh "rm -rf ./* ./.??*"
             }
         }
     }
 }
-

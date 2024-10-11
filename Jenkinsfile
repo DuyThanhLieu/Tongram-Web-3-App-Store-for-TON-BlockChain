@@ -12,7 +12,7 @@ pipeline {
         FILE_BAT = 'BS_Auto.bat'
         // Lệnh thực hiện trên server từ xa
         COMMANDS = './BS_Auto.bat'
-        
+         JENKINS_CREDENTIALS_ID = '5c7bd325-a531-4236-8534-102e45de69e7'
         // Thông tin bot Telegram
         CHAT_ID = '-4520276469'  // Thay bằng chat ID của nhóm
         BOT_TOKEN = '8085219018:AAHSTNao6k9OucZc15LQ476N-039N8NR7WI'  // Thay bằng token của bot Telegram

@@ -27,7 +27,7 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: "${JENKINS_CREDENTIALS_ID}", usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
                         git branch: "${BRANCH_NAME}", 
                             credentialsId: "${JENKINS_CREDENTIALS_ID}", 
-                            url: "https://${GITHUB_USER}:${GITHUB_TOKEN}github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain"
+                            url: "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain"
                     }
                 }
                 echo "Code checked out from ${BRANCH_NAME}"

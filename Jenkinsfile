@@ -8,7 +8,8 @@ pipeline {
         BRANCH_NAME = 'main'
         JENKINS_USERNAME = 'DuyThanhLieu'
         JENKINS_ADDRESS = 'jenkins.playgroundvina.com'
-        
+         FILE_SH = 'BS_Auto.sh'
+        FILE_BAT = 'BS_Auto.bat'
         // Lệnh thực hiện trên server từ xa
         COMMANDS = './BS_Auto.bat'
         

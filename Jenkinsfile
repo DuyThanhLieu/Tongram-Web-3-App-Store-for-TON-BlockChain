@@ -34,27 +34,12 @@ pipeline {
                 echo 'Current working directory:'
                 sh 'pwd'
 
-                echo "Listing current directory contents:"
-                sh 'ls -la'
+                echo "Listing contents of Tongram-Web-3-App-Store-for-TON-BlockChain:"
+                sh 'ls -la ./Tongram-Web-3-App-Store-for-TON-BlockChain'
 
-                // Thêm bước tìm kiếm thư mục REPO_NAME
-                echo "Finding repository directory:"
-                script {
-                    def repoPath = sh(script: "find . -type d -name '${REPO_NAME}'", returnStdout: true).trim()
-                    if (repoPath) {
-                        env.REPO_PATH = repoPath
-                        echo "Found repository at: ${repoPath}"
-                    } else {
-                        error "Repository directory ${REPO_NAME} not found."
-                    }
-                }
-
-                echo "Changing directory to ${REPO_PATH} and listing contents:"
-                sh """
-                    cd ${env.REPO_PATH}
-                    pwd
-                    ls -la
-                """
+                // Check the existence of TongramVer1
+                echo "Listing contents of TongramVer1 directory:"
+                sh 'ls -la ./Tongram-Web-3-App-Store-for-TON-BlockChain/TongramVer1'
             }
         }
 
@@ -89,28 +74,27 @@ pipeline {
             }
         }
 
-    stage('CD: Run Tests') {
-    steps {
-        echo 'Starting Tests'
-        script {
-            if (isUnix()) {
-                sh """
-                    cd ${env.REPO_PATH}/TongramVer1  # Navigate to the directory with your test file
-                    ls -la  # List files to ensure TG_ActionsALLLogic.spec.js is there
-                    npx playwright test TG_ActionsALLLogic.spec.js --reporter=html --output=./Results --workers=1
-                """
-            } else {
-                bat """
-                    cd ${env.REPO_PATH}\\TongramVer1  # Navigate to the directory with your test file
-                    dir  # List files to ensure TG_ActionsALLLogic.spec.js is there
-                    npx playwright test TG_ActionsALLLogic.spec.js --reporter=html --output=./Results --workers=1
-                """
+        stage('CD: Run Tests') {
+            steps {
+                echo 'Starting Tests'
+                script {
+                    if (isUnix()) {
+                        sh """
+                            cd ${env.REPO_PATH}/TongramVer1  # Navigate to the directory with your test file
+                            ls -la  # List files to ensure TG_ActionsALLLogic.spec.js is there
+                            npx playwright test TG_ActionsALLLogic.spec.js --reporter=html --output=./Results --workers=1
+                        """
+                    } else {
+                        bat """
+                            cd ${env.REPO_PATH}\\TongramVer1  # Navigate to the directory with your test file
+                            dir  # List files to ensure TG_ActionsALLLogic.spec.js is there
+                            npx playwright test TG_ActionsALLLogic.spec.js --reporter=html --output=./Results --workers=1
+                        """
+                    }
+                }
+                echo "Tests executed"
             }
         }
-        echo "Tests executed"
-    }
-}
-
 
         stage('Archive Test Results') {
             steps {
@@ -119,17 +103,12 @@ pipeline {
             }
         }
 
-        // Thêm stage để xóa tài nguyên
-        stage('Cleanup Resources') {
+        stage('Cleanup Resources') {  // New stage to cleanup resources
             steps {
                 echo 'Cleaning up resources...'
                 script {
-                    sh """
-                        cd ${env.REPO_PATH}
-                        rm -rf node_modules package-lock.json
-                        rm -rf playwright-report
-                        echo 'Resources cleaned up.'
-                    """
+                    sh 'rm -rf node_modules package-lock.json Results'  // Adjust according to your resource needs
+                    echo 'Resources cleaned up.'
                 }
             }
         }

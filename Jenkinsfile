@@ -96,12 +96,14 @@ pipeline {
                     if (isUnix()) {
                         sh """
                             cd ${env.REPO_PATH}
-                            chmod +x ${FILE_SH} 
-                            ./${FILE_SH}
+                            ls -la  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
+                            chmod +x BS_Auto.sh 
+                            ./BS_Auto.sh
                         """
                     } else {
                         bat """
                             cd ${env.REPO_PATH}
+                            dir  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
                             ${FILE_BAT}
                         """
                     }
@@ -114,6 +116,21 @@ pipeline {
             steps {
                 archiveArtifacts artifacts: '**/playwright-report/**/*', allowEmptyArchive: true
                 echo 'Test results archived.'
+            }
+        }
+
+        // Thêm stage để xóa tài nguyên
+        stage('Cleanup Resources') {
+            steps {
+                echo 'Cleaning up resources...'
+                script {
+                    sh """
+                        cd ${env.REPO_PATH}
+                        rm -rf node_modules package-lock.json
+                        rm -rf playwright-report
+                        echo 'Resources cleaned up.'
+                    """
+                }
             }
         }
     }

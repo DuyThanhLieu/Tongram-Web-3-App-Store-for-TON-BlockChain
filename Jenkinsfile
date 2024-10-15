@@ -38,21 +38,19 @@ pipeline {
         stage('Verify Installation and Setup Dependencies') {
             steps {
                 script {
-                    dir("${env.REPO_PATH}") {
-                        def nodeVersion = sh(script: "node -v || echo 'Not_Installed'", returnStdout: true).trim()
-                        def npmVersion = sh(script: "npm -v || echo 'Not_Installed'", returnStdout: true).trim()
-                        def playwrightVersion = sh(script: "npx playwright --version || echo 'Not_Installed'", returnStdout: true).trim()
+                    def nodeVersion = sh(script: "node -v || echo 'Not_Installed'", returnStdout: true).trim()
+                    def npmVersion = sh(script: "npm -v || echo 'Not_Installed'", returnStdout: true).trim()
+                    def playwrightVersion = sh(script: "npx playwright --version || echo 'Not_Installed'", returnStdout: true).trim()
 
-                        if (nodeVersion != 'Not_Installed' && npmVersion != 'Not_Installed' && playwrightVersion != 'Not_Installed') {
-                            echo "Node, npm, and Playwright are already installed. Skipping setup."
-                        } else {
-                            echo "Installing dependencies..."
-                            sh """
-                                npm install
-                                npx playwright install  
-                                npm install @playwright/test@latest
-                            """
-                        }
+                    if (nodeVersion != 'Not_Installed' && npmVersion != 'Not_Installed' && playwrightVersion != 'Not_Installed') {
+                        echo "Node, npm, and Playwright are already installed. Skipping setup."
+                    } else {
+                        echo "Installing dependencies..."
+                        sh """
+                            npm install
+                            npx playwright install  
+                            npm install @playwright/test@latest
+                        """
                     }
                 }
             }
@@ -64,8 +62,8 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh """
-                            chmod +x BS_Auto.sh 
-                            ./BS_Auto.sh > test_results.log
+                            chmod +x ${FILE_SH}
+                            ./${FILE_SH} > test_results.log
                         """
                     } else {
                         bat """
@@ -73,33 +71,44 @@ pipeline {
                         """
                     }
 
-                    // Parse test_results.log to get total, passed, and failed test cases
-                    def totalTestCases = sh(script: "grep 'Test Cases:' test_results.log | awk '{print \$3}'", returnStdout: true).trim().toInteger()
-                    def passedTestCases = sh(script: "grep 'Passed:' test_results.log | awk '{print \$2}'", returnStdout: true).trim().toInteger()
-                    def failedTestCases = sh(script: "grep 'Failed:' test_results.log | awk '{print \$2}'", returnStdout: true).trim().toInteger()
+                    // Kiểm tra xem file log có tồn tại hay không
+                    def logExists = sh(script: "test -f test_results.log && echo 'exists' || echo 'not_exists'", returnStdout: true).trim()
 
-                    // Nếu có test case failed, đọc tên các test case failed
-                    def failedTestCasesNames = []
-                    if (failedTestCases > 0) {
-                        failedTestCasesNames = sh(script: "grep 'FAILED' test_results.log | awk '{print \$2}'", returnStdout: true).split('\n')
+                    if (logExists == 'exists') {
+                        // Parse test_results.log để lấy tổng số, passed, và failed test cases
+                        def totalTestCases = sh(script: "grep 'Test Cases:' test_results.log | awk '{print \$3}'", returnStdout: true).trim()
+                        def passedTestCases = sh(script: "grep 'Passed:' test_results.log | awk '{print \$2}'", returnStdout: true).trim()
+                        def failedTestCases = sh(script: "grep 'Failed:' test_results.log | awk '{print \$2}'", returnStdout: true).trim()
+
+                        totalTestCases = totalTestCases ?: '0'
+                        passedTestCases = passedTestCases ?: '0'
+                        failedTestCases = failedTestCases ?: '0'
+
+                        // Nếu có test case failed, đọc tên các test case failed
+                        def failedTestCasesNames = []
+                        if (failedTestCases.toInteger() > 0) {
+                            failedTestCasesNames = sh(script: "grep 'FAILED' test_results.log | awk '{print \$2}'", returnStdout: true).split('\n')
+                        }
+
+                        echo "Total: ${totalTestCases}, Passed: ${passedTestCases}, Failed: ${failedTestCases}"
+
+                        // Gửi thông báo qua Telegram
+                        def message = "🔧 Jenkins Build #${env.BUILD_NUMBER}\n" +
+                                      "✅ Status: ${currentBuild.result ?: 'SUCCESS'}\n" +
+                                      "Tổng số testcase: ${totalTestCases}\n" +
+                                      "Testcase pass: ${passedTestCases}\n" +
+                                      "Testcase fail: ${failedTestCases}\n" +
+                                      "🕒 Time: ${currentBuild.durationString}\n" +
+                                      "🔗 Link: ${env.BUILD_URL}"
+
+                        if (failedTestCases.toInteger() > 0) {
+                            message += "\n❌ Failed Test Cases:\n" + failedTestCasesNames.join('\n')
+                        }
+
+                        sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${message}'"
+                    } else {
+                        echo "Test log not found!"
                     }
-
-                    echo "Total: ${totalTestCases}, Passed: ${passedTestCases}, Failed: ${failedTestCases}"
-
-                    // Gửi thông báo chi tiết qua Telegram
-                    def message = "🔧 Jenkins Build #${env.BUILD_NUMBER}\n" +
-                                  "✅ Status: ${currentBuild.result ?: 'SUCCESS'}\n" +
-                                  "Tổng số testcase: ${totalTestCases}\n" +
-                                  "Testcase pass: ${passedTestCases}\n" +
-                                  "Testcase fail: ${failedTestCases}\n" +
-                                  "🕒 Time: ${currentBuild.durationString}\n" +
-                                  "🔗 Link: ${env.BUILD_URL}"
-
-                    if (failedTestCases > 0) {
-                        message += "\n❌ Failed Test Cases:\n" + failedTestCasesNames.join('\n')
-                    }
-
-                    sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${message}'"
                 }
             }
         }
@@ -129,10 +138,7 @@ pipeline {
                 echo "Build success"
                 def message = "✅ Jenkins Build #${env.BUILD_NUMBER} Success!\n" +
                               "🕒 Time: ${currentBuild.durationString}\n" +
-                              "🔗 Link: ${env.BUILD_URL}\n" +
-                              "Tổng số testcase: ${totalTestCases}\n" +
-                              "Testcase pass: ${passedTestCases}\n" +
-                              "Testcase fail: ${failedTestCases}"
+                              "🔗 Link: ${env.BUILD_URL}"
                 sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${message}'"
             }
         }
@@ -142,10 +148,7 @@ pipeline {
                 echo "Build failed"
                 def message = "❌ Jenkins Build #${env.BUILD_NUMBER} Failed!\n" +
                               "🕒 Time: ${currentBuild.durationString}\n" +
-                              "🔗 Link: ${env.BUILD_URL}\n" +
-                              "Tổng số testcase: ${totalTestCases}\n" +
-                              "Testcase pass: ${passedTestCases}\n" +
-                              "Testcase fail: ${failedTestCases}"
+                              "🔗 Link: ${env.BUILD_URL}"
                 sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${message}'"
             }
         }

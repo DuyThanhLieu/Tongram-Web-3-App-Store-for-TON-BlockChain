@@ -82,27 +82,28 @@ pipeline {
         }
 
         // Stage chạy các bài kiểm tra
-        stage('CD: Run Tests') {
-            steps {
-                echo 'Starting Tests' // Thông báo bắt đầu chạy tests
-                script {
-                    // Kiểm tra xem hệ điều hành có phải Unix hay không để chọn cách chạy khác nhau
-                    if (isUnix()) {
-                        sh """
-                            ls -la  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
-                            chmod +x ${FILE_SH} // Thiết lập quyền thực thi cho script
-                            ./${FILE_SH} // Chạy script
-                        """
-                    } else {
-                        bat """
-                            dir  # Liệt kê các tệp để đảm bảo BS_Auto.bat có ở đó
-                            ${FILE_BAT} // Chạy batch script
-                        """
-                    }
-                }
-                echo "Tests executed" // Thông báo đã chạy xong tests
+     stage('CD: Run Tests') {
+    steps {
+        echo 'Starting Tests'
+        script {
+            if (isUnix()) {
+                sh """
+                    cd ${env.REPO_PATH}
+                    ls -la  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
+                    sh BS_Auto.sh
+                """
+            } else {
+                bat """
+                    cd ${env.REPO_PATH}
+                    dir  # Liệt kê các tệp để đảm bảo BS_Auto.bat có ở đó
+                    ${FILE_BAT}
+                """
             }
         }
+        echo "Tests executed"
+    }
+}
+
 
         // Stage lưu trữ kết quả kiểm tra
         stage('Archive Test Results') {

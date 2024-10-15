@@ -82,26 +82,36 @@ pipeline {
         }
 
         // Stage chạy các bài kiểm tra
-     stage('CD: Run Tests') {
-    steps {
-        echo 'Starting Tests'
-        script {
-            if (isUnix()) {
-                sh """
-                    cd ${env.REPO_PATH}
-                    ls -la  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
-                    sh BS_Auto.sh
-                """
-            } else {
-                bat """
-                    cd ${env.REPO_PATH}
-                    dir  # Liệt kê các tệp để đảm bảo BS_Auto.bat có ở đó
-                    ${FILE_BAT}
-                """
+ stage('CD: Run Tests') {
+            steps {
+                echo 'Starting Tests'
+                script {
+                    if (isUnix()) {
+                        sh """
+                            cd ${env.REPO_PATH}
+                            ls -la  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
+                            chmod +x BS_Auto.sh 
+                            ./BS_Auto.sh
+                        """
+                    } else {
+                        bat """
+                            cd ${env.REPO_PATH}
+                            dir  # Liệt kê các tệp để đảm bảo BS_Auto.bat có ở đó
+                            ${FILE_BAT}
+                        """
+                    }
+                }
+                echo "Tests executed"
             }
         }
-        echo "Tests executed"
-    }
+
+        stage('Archive Test Results') {
+            steps {
+                archiveArtifacts artifacts: '**/playwright-report/**/*', allowEmptyArchive: true
+                echo 'Test results archived.'
+            }
+        }
+
 }
 
 

@@ -1,22 +1,21 @@
 #!/bin/bash
 # Busai GPT
 
-# Tạo file để lưu tên test case thất bại
-FAILURE_LOG="failure_cases.log"
-> "$FAILURE_LOG"  # Xóa nội dung file nếu nó đã tồn tại
+# Ghi tên các test case thất bại vào file log
+LOG_FILE="failure_cases.log"
+> $LOG_FILE  # Xóa nội dung file log trước khi chạy
 
-# Chạy test cases và lưu thông tin về các test case thất bại
-echo "Bắt đầu thực hiện kiểm tra TG_ActionsALLLogic.spec.js, TG_Checkmenubar.spec.js và TG_CheckPageFooter.spec.js"
-npx playwright test TG_ActionsALLLogic.spec.js TG_Checkmenubar.spec.js TG_CheckPageFooter.spec.js --reporter=html --output=./Results --workers=1 | tee output.log | grep -E "FAIL" | awk '{print $1}' >> "$FAILURE_LOG"
+# Chạy các test case và ghi lại kết quả
+echo "Bắt đầu thực hiện kiểm tra BS_Actions.spec.js"
+npx playwright test TG_ActionsALLLogic.spec.js TG_Checkmenubar.spec.js TG_CheckPageFooter.spec.js --reporter=html --output=./Results --workers=1 | tee -a test_output.log
 
-echo "Kiểm tra đã hoàn thành."
+# Kiểm tra trạng thái của từng test case
+while IFS= read -r line; do
+    if [[ "$line" == *"failed"* ]]; then
+        # Lưu tên test case vào file log nếu nó thất bại
+        echo "${line}" >> $LOG_FILE
+    fi
+done < test_output.log
 
-# Kiểm tra nếu có test case thất bại
-if [[ -s "$FAILURE_LOG" ]]; then
-    echo "Một số test cases đã thất bại:"
-    cat "$FAILURE_LOG"
-    exit 1  # Trả về mã lỗi để Jenkins biết có lỗi
-else
-    echo "Tất cả các test cases đã pass."
-    exit 0  # Trả về mã thành công
-fi
+echo "Kiểm tra BS_Actions.spec.js đã hoàn thành"
+

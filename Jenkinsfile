@@ -21,20 +21,20 @@ pipeline {
     }
 
     stages {
-        stage('CI: Checkout Code') {
+        stage('Preparation') {
             steps {
                 script {
+                    echo "Preparing environment..."
+                    // Checkout Code
                     withCredentials([usernamePassword(credentialsId: "${JENKINS_CREDENTIALS_ID}", usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
                         git branch: "${BRANCH_NAME}", 
                             credentialsId: "${JENKINS_CREDENTIALS_ID}", 
                             url: "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain"
                     }
+                    echo "Code checked out from ${BRANCH_NAME}"
+                    echo "Current working directory:"
+                    sh 'pwd'
                 }
-                echo "Code checked out from ${BRANCH_NAME}"
-                echo "Current working directory:"
-                sh 'pwd'
-                echo "Listing current directory contents:"
-                sh 'ls -la'
             }
         }
 
@@ -98,7 +98,18 @@ pipeline {
             }
         }
 
-        stage('Clear Resources') { 
+        stage('Notify') {
+            steps {
+                script {
+                    def status = currentBuild.result ?: 'SUCCESS'
+                    def message = (status == 'SUCCESS') ? "✅ Jenkins Build #${env.BUILD_NUMBER} Success!" : "❌ Jenkins Build #${env.BUILD_NUMBER} Failed!"
+                    message += "\n🕒 Time: ${currentBuild.durationString}\n🔗 Link: ${env.BUILD_URL}"
+                    sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${message}'"
+                }
+            }
+        }
+
+        stage('Clear Resources') {
             steps {
                 script {
                     echo 'Cleaning up resources...'
@@ -114,11 +125,12 @@ pipeline {
     post {
         always {
             script {
-                // Gửi thông báo đến Telegram trong mọi trường hợp
-                def status = currentBuild.result ?: 'SUCCESS'
-                def message = (status == 'SUCCESS') ? "✅ Jenkins Build #${env.BUILD_NUMBER} Success!" : "❌ Jenkins Build #${env.BUILD_NUMBER} Failed!"
-                message += "\n🕒 Time: ${currentBuild.durationString}\n🔗 Link: ${env.BUILD_URL}"
-                sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${message}'"
+                // Chạy giai đoạn dọn dẹp để đảm bảo tài nguyên luôn được xóa
+                echo 'Running cleanup...'
+                sh """
+                    rm -rf node_modules package-lock.json
+                    echo 'Cleanup completed.'
+                """
             }
         }
     }

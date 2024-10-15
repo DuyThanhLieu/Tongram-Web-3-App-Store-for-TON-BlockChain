@@ -117,21 +117,23 @@ pipeline {
                 echo 'Test results archived.'
             }
         }
+
+        stage('Clear Resources') { // Thêm stage xóa tài nguyên
+            steps {
+                script {
+                    echo 'Cleaning up resources...'
+                    // Xóa tất cả các tài nguyên đã tải
+                    sh """
+                        cd ${env.REPO_PATH}
+                        rm -rf node_modules package-lock.json
+                        echo 'Resources cleaned.'
+                    """
+                }
+            }
+        }
     }
 
     post {
-        always { // Thực hiện luôn sau khi kết thúc các bước trước đó
-            script {
-                echo 'Cleaning up resources...'
-                // Xóa tất cả các tài nguyên đã tải
-                sh """
-                    cd ${env.REPO_PATH}
-                    rm -rf node_modules package-lock.json
-                    echo 'Resources cleaned.'
-                """
-            }
-        }
-
         success {
             script {
                 def status = currentBuild.result ?: 'SUCCESS'

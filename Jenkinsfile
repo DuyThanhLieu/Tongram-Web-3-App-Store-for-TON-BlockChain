@@ -6,7 +6,7 @@ pipeline {
         // Thông tin repository GitHub
         GITHUB_URL = 'https://github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain'
         SERVER_PATH = 'Tongram-Web-3-App-Store-for-TON-BlockChain' // Cập nhật đường dẫn
-        REPO_NAME = 'Tongram-Web-3-App-Store-for-TON-BlockChain'
+        REPO_NAME = 'ThanhDeMoCICD'
         BRANCH_NAME = 'main'
         JENKINS_USERNAME = 'DuyThanhLieu'
         JENKINS_ADDRESS = 'jenkins.playgroundvina.com'

@@ -93,16 +93,16 @@ pipeline {
                 echo 'Starting Tests'
                 script {
                     if (isUnix()) {
-                        sh """
-                            cd ${env.REPO_PATH}
-                            ls -la  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
-                            chmod +x BS_Auto.sh 
-                            ./BS_Auto.sh
-                        """
+                        // Lưu lại kết quả test case
+                        def testResult = sh(script: "./BS_Auto.sh", returnStatus: true)
+                        if (testResult == 0) {
+                            env.TEST_STATUS = "PASS"
+                        } else {
+                            env.TEST_STATUS = "FAIL"
+                        }
                     } else {
                         bat """
                             cd ${env.REPO_PATH}
-                            dir  # Liệt kê các tệp để đảm bảo BS_Auto.bat có ở đó
                             ${FILE_BAT}
                         """
                     }
@@ -142,7 +142,8 @@ pipeline {
                 // Gửi thông báo thành công đến Telegram
                 def successMessage = "✅ Jenkins Build #${env.BUILD_NUMBER} Success!\n" +
                                      "🕒 Time: ${currentBuild.durationString}\n" +
-                                     "🔗 Link: ${env.BUILD_URL}"
+                                     "🔗 Link: ${env.BUILD_URL}\n" +
+                                     "Test case status: ${env.TEST_STATUS}"  // Thêm thông tin trạng thái testcase
                 sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${successMessage}'"
             }
         }
@@ -154,7 +155,8 @@ pipeline {
                 // Gửi thông báo thất bại đến Telegram
                 def failureMessage = "❌ Jenkins Build #${env.BUILD_NUMBER} Failed!\n" +
                                      "🕒 Time: ${currentBuild.durationString}\n" +
-                                     "🔗 Link: ${env.BUILD_URL}"
+                                     "🔗 Link: ${env.BUILD_URL}\n" +
+                                     "Test case status: ${env.TEST_STATUS}"  // Thêm thông tin trạng thái testcase
                 sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${failureMessage}'"
             }
         }

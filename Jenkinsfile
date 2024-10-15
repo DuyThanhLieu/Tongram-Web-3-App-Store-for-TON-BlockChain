@@ -5,19 +5,18 @@ pipeline {
     environment {
         // Thông tin repository GitHub
         GITHUB_URL = 'https://github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain'
-        SERVER_PATH = 'Tongram-Web-3-App-Store-for-TON-BlockChain' // Cập nhật đường dẫn
-        REPO_NAME = 'ThanhDeMoCICD'
+        SERVER_PATH = 'Tongram-Web-3-App-Store-for-TON-BlockChain'
+        REPO_NAME = 'ThanhDeMoCICD' // Cập nhật tên repo
         BRANCH_NAME = 'main'
         JENKINS_USERNAME = 'DuyThanhLieu'
         JENKINS_ADDRESS = 'jenkins.playgroundvina.com'
         FILE_SH = 'BS_Auto.sh'
         FILE_BAT = 'BS_Auto.bat'
-        // Lệnh thực hiện trên server từ xa
-        COMMANDS = './BS_Auto.bat'
         JENKINS_CREDENTIALS_ID = '5c7bd325-a531-4236-8534-102e45de69e7'
+        CHAT_ID = '-1002308985537'  // Chat ID của nhóm
+        BOT_TOKEN = '8085219018:AAHSTNao6k9OucZc15LQ476N-039N8NR7WI'  // Token của bot Telegram
     }
-    
-    // Thông tin bot Telegram
+
     triggers {
         cron('0 0 * * *') 
     }
@@ -53,21 +52,6 @@ pipeline {
                     pwd
                     ls -la
                 """
-            }
-        }
-
-        stage('Check BS_Auto.sh File') {
-            steps {
-                script {
-                    dir("${env.REPO_PATH}") {
-                        def fileExists = sh(script: "test -e BS_Auto.sh && echo 'exists' || echo 'not exists'", returnStdout: true).trim()
-                        echo "BS_Auto.sh file: ${fileExists}"
-
-                        if (fileExists == 'not exists') {
-                            error "BS_Auto.sh file not found in ${env.REPO_PATH}. Available files: $(ls -la)"
-                        }
-                    }
-                }
             }
         }
 
@@ -109,8 +93,8 @@ pipeline {
                     if (isUnix()) {
                         sh """
                             cd ${env.REPO_PATH}
-                            chmod +x BS_Auto.sh 
-                            ./BS_Auto.sh
+                            chmod +x ${FILE_SH} 
+                            ./${FILE_SH}
                         """
                     } else {
                         bat """
@@ -137,15 +121,11 @@ pipeline {
                 def status = currentBuild.result ?: 'SUCCESS'
                 echo "All test cases passed. Build status: ${status}"
 
-                if (isUnix()) {
-                    if (fileExists("${SERVER_PATH}/temp")) {
-                        sh "rm -rf ${SERVER_PATH}/temp/*"
-                    } else {
-                        echo "Temporary folder does not exist."
-                    }
-                } else {
-                    bat "if exist ${SERVER_PATH}\\temp\\* del /Q ${SERVER_PATH}\\temp\\*"
-                }
+                // Gửi thông báo thành công đến Telegram
+                def successMessage = "✅ Jenkins Build #${env.BUILD_NUMBER} Success!\n" +
+                                     "🕒 Time: ${currentBuild.durationString}\n" +
+                                     "🔗 Link: ${env.BUILD_URL}"
+                sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${successMessage}'"
             }
         }
         failure {
@@ -153,15 +133,11 @@ pipeline {
                 def status = currentBuild.result ?: 'FAILURE'
                 echo "Some test cases failed. Build status: ${status}"
 
-                if (isUnix()) {
-                    if (fileExists("${SERVER_PATH}/temp")) {
-                        sh "rm -rf ${SERVER_PATH}/temp/*"
-                    } else {
-                        echo "Temporary folder does not exist."
-                    }
-                } else {
-                    bat "if exist ${SERVER_PATH}\\temp\\* del /Q ${SERVER_PATH}\\temp\\*"
-                }
+                // Gửi thông báo thất bại đến Telegram
+                def failureMessage = "❌ Jenkins Build #${env.BUILD_NUMBER} Failed!\n" +
+                                     "🕒 Time: ${currentBuild.durationString}\n" +
+                                     "🔗 Link: ${env.BUILD_URL}"
+                sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${failureMessage}'"
             }
         }
     }

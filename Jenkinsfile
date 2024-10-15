@@ -5,15 +5,15 @@ pipeline {
     environment {
         // Thông tin repository GitHub
         GITHUB_URL = 'https://github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain'
-        REPO_NAME = 'Tongram-Web-3-App-Store-for-TON-BlockChain'
+        REPO_NAME = 'Tongram-Web-3-App-Store-for-TON-BlockChain' // Cập nhật tên repo
         BRANCH_NAME = 'main'
         JENKINS_USERNAME = 'DuyThanhLieu'
         JENKINS_ADDRESS = 'jenkins.playgroundvina.com'
         FILE_SH = 'BS_Auto.sh'
         FILE_BAT = 'BS_Auto.bat'
         JENKINS_CREDENTIALS_ID = '5c7bd325-a531-4236-8534-102e45de69e7'
-        CHAT_ID = '-1002308985537'
-        BOT_TOKEN = '8085219018:AAHSTNao6k9OucZc15LQ476N-039N8NR7WI'
+        CHAT_ID = '-1002308985537'  // Chat ID của nhóm
+        BOT_TOKEN = '8085219018:AAHSTNao6k9OucZc15LQ476N-039N8NR7WI'  // Token của bot Telegram
     }
 
     triggers {
@@ -33,14 +33,19 @@ pipeline {
                 echo "Code checked out from ${BRANCH_NAME}"
                 echo 'Current working directory:'
                 sh 'pwd'
+
                 echo "Listing current directory contents:"
                 sh 'ls -la'
-                
+
                 echo "Finding repository directory:"
                 script {
-                    def repoPath = pwd()
-                    env.REPO_PATH = repoPath
-                    echo "Found repository at: ${repoPath}"
+                    def repoPath = pwd() // Lấy đường dẫn hiện tại
+                    if (fileExists(repoPath)) {
+                        env.REPO_PATH = repoPath
+                        echo "Found repository at: ${repoPath}"
+                    } else {
+                        error "Repository directory ${REPO_NAME} not found."
+                    }
                 }
 
                 echo "Changing directory to ${REPO_PATH} and listing contents:"
@@ -83,65 +88,44 @@ pipeline {
             }
         }
 
-        stage('CD: Run Tests') {
-            steps {
-                echo 'Starting Tests'
-                script {
-                    if (isUnix()) {
-                        sh """
-                            cd ${env.REPO_PATH}
-                            ls -la  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
-                            chmod +x BS_Auto.sh 
-                            ./BS_Auto.sh
-                        """
-                    } else {
-                        bat """
-                            cd ${env.REPO_PATH}
-                            dir  # Liệt kê các tệp để đảm bảo BS_Auto.bat có ở đó
-                            ${FILE_BAT}
-                        """
-                    }
+       stage('CD: Run Tests') {
+    steps {
+        echo 'Starting Tests'
+        script {
+            if (isUnix()) {
+                sh """
+                    cd ${env.REPO_PATH}
+                    ls -la  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
+                    chmod +x BS_Auto.sh 
+                    ./BS_Auto.sh
+                """
+            } else {
+                bat """
+                    cd ${env.REPO_PATH}
+                    dir  # Liệt kê các tệp để đảm bảo BS_Auto.bat có ở đó
+                    ${FILE_BAT}
+                """
+            }
 
-                    // Kiểm tra kết quả và lấy thông tin các test case
-                    def testResult = sh(script: 'cat failure_cases.log', returnStatus: true, returnStdout: true).trim()
-                    def totalTestCases = 0
-                    def passedTestCases = 0
-                    def failedTestCases = 0
-                    def testCaseNames = []
-
-                    if (testResult) {
-                        def failedTests = testResult.split('\n')
-                        failedTestCases = failedTests.size()
-                        failedTests.each { testCase ->
-                            testCaseNames.add(testCase)
-                        }
-                    }
-
-                    // Giả sử totalTestCases và passedTestCases được tính toán từ báo cáo Playwright
-                    // Cập nhật các biến tổng số test case và test case pass từ báo cáo Playwright
-                    totalTestCases = ... // Lấy số lượng test case từ báo cáo
-                    passedTestCases = totalTestCases - failedTestCases
-
-                    echo "Tổng số testcase: ${totalTestCases}"
-                    echo "Testcase pass: ${passedTestCases}"
-                    echo "Testcase fail: ${failedTestCases}"
-
-                    // Gửi thông báo cho từng test case thất bại
-                    if (failedTestCases > 0) {
-                        failedTests.each { testCase ->
-                            def failureMessage = "❌ Test Case Failed: ${testCase}\n" +
-                                                 "🔗 Build: ${env.BUILD_URL}\n" +
-                                                 "🕒 Duration: ${currentBuild.durationString}"
-                            sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${failureMessage}'"
-                        }
-                        error "Some test cases failed. Check the log for details."
-                    } else {
-                        echo "All test cases passed."
-                    }
+            // Kiểm tra kết quả và lấy tên các test case thất bại
+            def testResult = sh(script: 'cat failure_cases.log', returnStatus: true, returnStdout: true)
+            if (testResult) {
+                def failedTests = testResult.trim().split('\n')
+                failedTests.each { testCase ->
+                    // Gửi thông báo đến Telegram cho từng test case thất bại
+                    def failureMessage = "❌ Test Case Failed: ${testCase}\n" +
+                                         "🔗 Build: ${env.BUILD_URL}\n" +
+                                         "🕒 Duration: ${currentBuild.durationString}"
+                    sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${failureMessage}'"
                 }
-                echo "Tests executed"
+                error "Some test cases failed. Check the log for details."
+            } else {
+                echo "All test cases passed."
             }
         }
+        echo "Tests executed"
+    }
+}
 
         stage('Archive Test Results') {
             steps {
@@ -150,10 +134,11 @@ pipeline {
             }
         }
 
-        stage('Clear Resources') {
+        stage('Clear Resources') { // Thêm stage xóa tài nguyên
             steps {
                 script {
                     echo 'Cleaning up resources...'
+                    // Xóa tất cả các tài nguyên đã tải
                     sh """
                         cd ${env.REPO_PATH}
                         rm -rf node_modules package-lock.json
@@ -174,10 +159,7 @@ pipeline {
                 def successMessage = "✅ Jenkins Build #${env.BUILD_NUMBER} Success!\n" +
                                      "🕒 Time: ${currentBuild.durationString}\n" +
                                      "🔗 Link: ${env.BUILD_URL}\n" +
-                                     "Tổng số testcase: ${totalTestCases}\n" +
-                                     "Testcase pass: ${passedTestCases}\n" +
-                                     "Testcase fail: ${failedTestCases}\n" +
-                                     "Test case names: ${testCaseNames.join(', ')}"  // Thêm thông tin trạng thái testcase
+                                     "Test case status: ${env.TEST_STATUS}"  // Thêm thông tin trạng thái testcase
                 sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${successMessage}'"
             }
         }
@@ -190,10 +172,7 @@ pipeline {
                 def failureMessage = "❌ Jenkins Build #${env.BUILD_NUMBER} Failed!\n" +
                                      "🕒 Time: ${currentBuild.durationString}\n" +
                                      "🔗 Link: ${env.BUILD_URL}\n" +
-                                     "Tổng số testcase: ${totalTestCases}\n" +
-                                     "Testcase pass: ${passedTestCases}\n" +
-                                     "Testcase fail: ${failedTestCases}\n" +
-                                     "Test case names: ${testCaseNames.join(', ')}"  // Thêm thông tin trạng thái testcase
+                                     "Test case status: ${env.TEST_STATUS}"  // Thêm thông tin trạng thái testcase
                 sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${failureMessage}'"
             }
         }

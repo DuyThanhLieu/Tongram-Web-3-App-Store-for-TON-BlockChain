@@ -54,6 +54,20 @@ pipeline {
                 """
             }
         }
+        stage('Check Repository Directory') {
+    steps {
+        script {
+            def repoPath = sh(script: "find . -type d -name '${REPO_NAME}'", returnStdout: true).trim()
+            if (repoPath) {
+                echo "Found repository at: ${repoPath}"
+                env.REPO_PATH = repoPath
+            } else {
+                error "Repository directory ${REPO_NAME} not found."
+            }
+        }
+    }
+}
+
 
         stage('Verify Installation and Setup Dependencies') {
             steps {

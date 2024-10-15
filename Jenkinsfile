@@ -15,9 +15,9 @@ pipeline {
         // Lệnh thực hiện trên server từ xa
         COMMANDS = './BS_Auto.bat'
         JENKINS_CREDENTIALS_ID = '5c7bd325-a531-4236-8534-102e45de69e7'
-        CHAT_ID = '-1002308985537'  // Chat ID của nhóm
-        BOT_TOKEN = '8085219018:AAHSTNao6k9OucZc15LQ476N-039N8NR7WI'  // Token của bot Telegram
     }
+    
+    // Thông tin bot Telegram
     triggers {
         cron('0 0 * * *') 
     }
@@ -53,6 +53,21 @@ pipeline {
                     pwd
                     ls -la
                 """
+            }
+        }
+
+        stage('Check BS_Auto.sh File') {
+            steps {
+                script {
+                    dir("${env.REPO_PATH}") {
+                        def fileExists = sh(script: "test -e BS_Auto.sh && echo 'exists' || echo 'not exists'", returnStdout: true).trim()
+                        echo "BS_Auto.sh file: ${fileExists}"
+
+                        if (fileExists == 'not exists') {
+                            error "BS_Auto.sh file not found in ${env.REPO_PATH}. Available files: $(ls -la)"
+                        }
+                    }
+                }
             }
         }
 
@@ -94,8 +109,8 @@ pipeline {
                     if (isUnix()) {
                         sh """
                             cd ${env.REPO_PATH}
-                            chmod +x ${FILE_SH} 
-                            ./${FILE_SH}
+                            chmod +x BS_Auto.sh 
+                            ./BS_Auto.sh
                         """
                     } else {
                         bat """

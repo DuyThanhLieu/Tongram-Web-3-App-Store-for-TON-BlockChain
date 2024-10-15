@@ -1,88 +1,94 @@
 pipeline {
-    // Định nghĩa môi trường chạy cho pipeline, sử dụng Docker image có chứa Playwright
     agent {
         docker { image 'mcr.microsoft.com/playwright:v1.47.2-jammy' }  
     }
     environment {
-        // Các biến môi trường cần thiết cho pipeline
-        GITHUB_URL = 'https://github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain' // URL của repository GitHub
-        REPO_NAME = 'Tongram-Web-3-App-Store-for-TON-BlockChain' // Tên repository
-        BRANCH_NAME = 'main' // Tên nhánh cần kiểm tra
-        JENKINS_USERNAME = 'DuyThanhLieu' // Tên người dùng Jenkins
-        JENKINS_ADDRESS = 'jenkins.playgroundvina.com' // Địa chỉ Jenkins
-        FILE_SH = 'BS_Auto.sh' // Tên file shell script
-        FILE_BAT = 'BS_Auto.bat' // Tên file batch script
-        JENKINS_CREDENTIALS_ID = '5c7bd325-a531-4236-8534-102e45de69e7' // ID thông tin xác thực Jenkins
-        CHAT_ID = '-1002308985537' // Chat ID cho Telegram
-        BOT_TOKEN = '8085219018:AAHSTNao6k9OucZc15LQ476N-039N8NR7WI' // Token của bot Telegram
+        // Thông tin repository GitHub
+        GITHUB_URL = 'https://github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain'
+        REPO_NAME = 'Tongram-Web-3-App-Store-for-TON-BlockChain' // Cập nhật tên repo
+        BRANCH_NAME = 'main'
+        JENKINS_USERNAME = 'DuyThanhLieu'
+        JENKINS_ADDRESS = 'jenkins.playgroundvina.com'
+        FILE_SH = 'BS_Auto.sh'
+        FILE_BAT = 'BS_Auto.bat'
+        JENKINS_CREDENTIALS_ID = '5c7bd325-a531-4236-8534-102e45de69e7'
+        CHAT_ID = '-1002308985537'  // Chat ID của nhóm
+        BOT_TOKEN = '8085219018:AAHSTNao6k9OucZc15LQ476N-039N8NR7WI'  // Token của bot Telegram
     }
 
-    // triggers {
-    //     // Thiết lập trigger để chạy pipeline theo lịch trình, trong trường hợp này là mỗi ngày lúc 00:00
-    //     cron('0 0 * * *') 
-    // }
     triggers {
-    // Thiết lập trigger để chạy pipeline mỗi ngày lúc 11:47 AM UTC+7
-    cron('47 4 * * *') // 11:47 AM UTC+7 tương đương với 4:47 AM UTC
-}
+        cron('0 0 * * *') 
+    }
 
     stages {
-        // Stage kiểm tra mã nguồn từ GitHub
-        stage('Preparation') {
+        stage('CI: Checkout Code') {
             steps {
                 script {
-                    echo "Preparing environment..." // Thông báo đang chuẩn bị môi trường
-                    // Checkout Code
-                    // Sử dụng thông tin xác thực để checkout mã từ GitHub
                     withCredentials([usernamePassword(credentialsId: "${JENKINS_CREDENTIALS_ID}", usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
                         git branch: "${BRANCH_NAME}", 
                             credentialsId: "${JENKINS_CREDENTIALS_ID}", 
                             url: "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain"
                     }
-                    echo "Code checked out from ${BRANCH_NAME}" // Thông báo đã checkout mã
-                    echo "Current working directory:" // Thông báo đường dẫn hiện tại
-                    sh 'pwd' // Lấy đường dẫn hiện tại
                 }
+                echo "Code checked out from ${BRANCH_NAME}"
+                echo 'Current working directory:'
+                sh 'pwd'
+
+                echo "Listing current directory contents:"
+                sh 'ls -la'
+
+                echo "Finding repository directory:"
+                script {
+                    def repoPath = pwd() // Lấy đường dẫn hiện tại
+                    if (fileExists(repoPath)) {
+                        env.REPO_PATH = repoPath
+                        echo "Found repository at: ${repoPath}"
+                    } else {
+                        error "Repository directory ${REPO_NAME} not found."
+                    }
+                }
+
+                echo "Changing directory to ${REPO_PATH} and listing contents:"
+                sh """
+                    cd ${env.REPO_PATH}
+                    pwd
+                    ls -la
+                """
             }
         }
 
-        // Stage kiểm tra và cài đặt các phụ thuộc cần thiết
         stage('Verify Installation and Setup Dependencies') {
             steps {
                 script {
-                    dir("${env.WORKSPACE}") { // Chuyển đến thư mục làm việc hiện tại
-                        def installations = ['node', 'npm', 'npx'] // Danh sách các công cụ cần kiểm tra
-                        def allInstalled = true // Biến để theo dõi trạng thái cài đặt
+                    dir("${env.REPO_PATH}") {
+                        def nodePath = sh(script: "which node || echo 'Not_Installed'", returnStdout: true).trim()
+                        def npmPath = sh(script: "which npm || echo 'Not_Installed'", returnStdout: true).trim()
+                        def playwrightPath = sh(script: "which npx || echo 'Not_Installed'", returnStdout: true).trim()
+                        def nodeVersion = sh(script: "node -v || echo 'Not_Installed'", returnStdout: true).trim()
+                        def npmVersion = sh(script: "npm -v || echo 'Not_Installed'", returnStdout: true).trim()
+                        def playwrightVersion = sh(script: "npx playwright --version || echo 'Not_Installed'", returnStdout: true).trim()
 
-                        // Vòng lặp kiểm tra từng công cụ
-                        for (def tool : installations) {
-                            def toolPath = sh(script: "which ${tool} || echo 'Not_Installed'", returnStdout: true).trim()
-                            if (toolPath == 'Not_Installed') {
-                                allInstalled = false // Đánh dấu nếu một công cụ chưa được cài đặt
-                                echo "${tool} is not installed. Installing dependencies..." // Thông báo cài đặt
-                            } else {
-                                echo "${tool} is installed at ${toolPath}." // Thông báo nếu công cụ đã cài đặt
-                            }
-                        }
-
-                        // Nếu có công cụ chưa được cài đặt, tiến hành cài đặt
-                        if (!allInstalled) {
-                            sh """
-                                rm -rf node_modules package-lock.json // Xóa thư mục modules và file lock
-                                npm install // Cài đặt lại các phụ thuộc
-                                npx playwright install  // Cài đặt Playwright
-                                npm install @playwright/test@latest // Cài đặt phiên bản mới nhất của @playwright/test
-                            """
+                        echo "Node Version: ${nodeVersion} at ${nodePath}"
+                        echo "NPM Version: ${npmVersion} at ${npmPath}"
+                        echo "Playwright Version: ${playwrightVersion} at ${playwrightPath}"
+                        if (nodeVersion != 'Not_Installed' && npmVersion != 'Not_Installed' && playwrightVersion != 'Not_Installed') {
+                            echo "Node, npm, and Playwright are already installed. Skipping setup."
                         } else {
-                            echo "Node, npm, and Playwright are already installed. Skipping setup." // Thông báo nếu không cần cài đặt
+                            echo "Node, npm, or Playwright not installed. Installing dependencies..."
+                            sh """
+                                cd ${env.REPO_PATH}
+                                rm -rf node_modules package-lock.json
+                                npm install
+                                npx playwright install  
+                                npm install @playwright/test@latest
+                            """
                         }
                     }
                 }
             }
         }
 
-        // Stage chạy các bài kiểm tra
- stage('CD: Run Tests') {
+        stage('CD: Run Tests') {
             steps {
                 echo 'Starting Tests'
                 script {
@@ -112,55 +118,45 @@ pipeline {
             }
         }
 
-}
-
-
-        // Stage lưu trữ kết quả kiểm tra
-        stage('Archive Test Results') {
-            steps {
-                archiveArtifacts artifacts: '**/playwright-report/**/*', allowEmptyArchive: true // Lưu trữ kết quả kiểm tra
-                echo 'Test results archived.' // Thông báo đã lưu trữ kết quả
-            }
-        }
-
-        // Stage gửi thông báo đến Telegram
-        stage('Notify') {
+        stage('Clear Resources') { // Thêm stage xóa tài nguyên
             steps {
                 script {
-                    def status = currentBuild.result ?: 'SUCCESS' // Lấy trạng thái của build
-                    def message = (status == 'SUCCESS') ? "✅ Jenkins Build #${env.BUILD_NUMBER} Success!" : "❌ Jenkins Build #${env.BUILD_NUMBER} Failed!" // Tạo thông điệp dựa trên trạng thái
-                    message += "\n🕒 Time: ${currentBuild.durationString}\n🔗 Link: ${env.BUILD_URL}" // Thêm thời gian và link vào thông điệp
-                    // Gửi thông báo đến Telegram
-                    sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${message}'"
-                }
-            }
-        }
-
-        // Stage xóa tài nguyên không còn cần thiết
-        stage('Clear Resources') {
-            steps {
-                script {
-                    echo 'Cleaning up resources...' // Thông báo đang dọn dẹp tài nguyên
+                    echo 'Cleaning up resources...'
+                    // Xóa tất cả các tài nguyên đã tải
                     sh """
-                        rm -rf node_modules package-lock.json // Xóa thư mục modules và file lock
-                        echo 'Resources cleaned.' // Thông báo đã dọn dẹp xong
+                        cd ${env.REPO_PATH}
+                        rm -rf node_modules package-lock.json
+                        echo 'Resources cleaned.'
                     """
                 }
             }
         }
     }
 
-    // Phần xử lý sau khi các stage hoàn thành
     post {
-        always {
+        success {
             script {
-                // Chạy giai đoạn dọn dẹp để đảm bảo tài nguyên luôn được xóa
-                echo 'Running cleanup...'
-                sh """
-                    rm -rf node_modules package-lock.json // Xóa tài nguyên không cần thiết
-                    echo 'Cleanup completed.' // Thông báo dọn dẹp hoàn thành
-                """
+                def status = currentBuild.result ?: 'SUCCESS'
+                echo "All test cases passed. Build status: ${status}"
+
+                // Gửi thông báo thành công đến Telegram
+                def successMessage = "✅ Jenkins Build #${env.BUILD_NUMBER} Success!\n" +
+                                     "🕒 Time: ${currentBuild.durationString}\n" +
+                                     "🔗 Link: ${env.BUILD_URL}"
+                sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${successMessage}'"
+            }
+        }
+        failure {
+            script {
+                def status = currentBuild.result ?: 'FAILURE'
+                echo "Some test cases failed. Build status: ${status}"
+
+                // Gửi thông báo thất bại đến Telegram
+                def failureMessage = "❌ Jenkins Build #${env.BUILD_NUMBER} Failed!\n" +
+                                     "🕒 Time: ${currentBuild.durationString}\n" +
+                                     "🔗 Link: ${env.BUILD_URL}"
+                sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text='${failureMessage}'"
             }
         }
     }
-
+}

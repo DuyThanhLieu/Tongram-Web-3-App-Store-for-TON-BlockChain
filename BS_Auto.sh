@@ -8,4 +8,6 @@
 
 # npx playwright test BS_Actions.spec.js
 
+echo "Bắt đầu thực hiện kiểm tra BS_Actions.spec.js"
 npx playwright test BS_Actions.spec.js --reporter=html --output=./Results --workers=1
+echo "Kiểm tra BS_Actions.spec.js đã hoàn thành"

@@ -5,8 +5,7 @@ pipeline {
     environment {
         // Thông tin repository GitHub
         GITHUB_URL = 'https://github.com/DuyThanhLieu/Tongram-Web-3-App-Store-for-TON-BlockChain'
-        SERVER_PATH = 'Tongram-Web-3-App-Store-for-TON-BlockChain'
-        REPO_NAME = 'ThanhDeMoCICD' // Cập nhật tên repo
+        REPO_NAME = 'Tongram-Web-3-App-Store-for-TON-BlockChain' // Cập nhật tên repo
         BRANCH_NAME = 'main'
         JENKINS_USERNAME = 'DuyThanhLieu'
         JENKINS_ADDRESS = 'jenkins.playgroundvina.com'
@@ -35,18 +34,22 @@ pipeline {
                 echo 'Current working directory:'
                 sh 'pwd'
 
-                echo "Finding ${REPO_NAME} directory:"
+                echo "Listing current directory contents:"
+                sh 'ls -la'
+
+                // Thêm bước tìm kiếm thư mục REPO_NAME
+                echo "Finding repository directory:"
                 script {
                     def repoPath = sh(script: "find . -type d -name '${REPO_NAME}'", returnStdout: true).trim()
-                    echo "Found ${REPO_NAME} at: ${repoPath}"
                     if (repoPath) {
                         env.REPO_PATH = repoPath
+                        echo "Found repository at: ${repoPath}"
                     } else {
                         error "Repository directory ${REPO_NAME} not found."
                     }
                 }
 
-                echo "Changing directory to ${REPO_NAME} and listing contents:"
+                echo "Changing directory to ${REPO_PATH} and listing contents:"
                 sh """
                     cd ${env.REPO_PATH}
                     pwd
@@ -54,20 +57,6 @@ pipeline {
                 """
             }
         }
-        stage('Check Repository Directory') {
-    steps {
-        script {
-            def repoPath = sh(script: "find . -type d -name '${REPO_NAME}'", returnStdout: true).trim()
-            if (repoPath) {
-                echo "Found repository at: ${repoPath}"
-                env.REPO_PATH = repoPath
-            } else {
-                error "Repository directory ${REPO_NAME} not found."
-            }
-        }
-    }
-}
-
 
         stage('Verify Installation and Setup Dependencies') {
             steps {

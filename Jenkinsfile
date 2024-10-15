@@ -89,28 +89,28 @@ pipeline {
             }
         }
 
-        stage('CD: Run Tests') {
-            steps {
-                echo 'Starting Tests'
-                script {
-                    if (isUnix()) {
-                        sh """
-                            cd ${env.REPO_PATH}
-                            ls -la  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
-                            chmod +x BS_Auto.sh 
-                            ./BS_Auto.sh
-                        """
-                    } else {
-                        bat """
-                            cd ${env.REPO_PATH}
-                            dir  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
-                            ${FILE_BAT}
-                        """
-                    }
-                }
-                echo "Tests executed"
+    stage('CD: Run Tests') {
+    steps {
+        echo 'Starting Tests'
+        script {
+            if (isUnix()) {
+                sh """
+                    cd ${env.REPO_PATH}/TongramVer1  # Navigate to the directory with your test file
+                    ls -la  # List files to ensure TG_ActionsALLLogic.spec.js is there
+                    npx playwright test TG_ActionsALLLogic.spec.js --reporter=html --output=./Results --workers=1
+                """
+            } else {
+                bat """
+                    cd ${env.REPO_PATH}\\TongramVer1  # Navigate to the directory with your test file
+                    dir  # List files to ensure TG_ActionsALLLogic.spec.js is there
+                    npx playwright test TG_ActionsALLLogic.spec.js --reporter=html --output=./Results --workers=1
+                """
             }
         }
+        echo "Tests executed"
+    }
+}
+
 
         stage('Archive Test Results') {
             steps {

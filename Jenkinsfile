@@ -34,12 +34,26 @@ pipeline {
                 echo 'Current working directory:'
                 sh 'pwd'
 
-                echo "Listing contents of Tongram-Web-3-App-Store-for-TON-BlockChain:"
-                sh 'ls -la ./Tongram-Web-3-App-Store-for-TON-BlockChain'
+                echo "Listing current directory contents:"
+                sh 'ls -la'
 
-                // Check the existence of TongramVer1
-                echo "Listing contents of TongramVer1 directory:"
-                sh 'ls -la ./Tongram-Web-3-App-Store-for-TON-BlockChain/TongramVer1'
+                echo "Finding repository directory:"
+                script {
+                    def repoPath = pwd() // Lấy đường dẫn hiện tại
+                    if (fileExists(repoPath)) {
+                        env.REPO_PATH = repoPath
+                        echo "Found repository at: ${repoPath}"
+                    } else {
+                        error "Repository directory ${REPO_NAME} not found."
+                    }
+                }
+
+                echo "Changing directory to ${REPO_PATH} and listing contents:"
+                sh """
+                    cd ${env.REPO_PATH}
+                    pwd
+                    ls -la
+                """
             }
         }
 
@@ -80,15 +94,16 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh """
-                            cd ${env.REPO_PATH}/TongramVer1  # Navigate to the directory with your test file
-                            ls -la  # List files to ensure TG_ActionsALLLogic.spec.js is there
-                            npx playwright test TG_ActionsALLLogic.spec.js --reporter=html --output=./Results --workers=1
+                            cd ${env.REPO_PATH}
+                            ls -la  # Liệt kê các tệp để đảm bảo BS_Auto.sh có ở đó
+                            chmod +x BS_Auto.sh 
+                            ./BS_Auto.sh
                         """
                     } else {
                         bat """
-                            cd ${env.REPO_PATH}\\TongramVer1  # Navigate to the directory with your test file
-                            dir  # List files to ensure TG_ActionsALLLogic.spec.js is there
-                            npx playwright test TG_ActionsALLLogic.spec.js --reporter=html --output=./Results --workers=1
+                            cd ${env.REPO_PATH}
+                            dir  # Liệt kê các tệp để đảm bảo BS_Auto.bat có ở đó
+                            ${FILE_BAT}
                         """
                     }
                 }
@@ -102,19 +117,21 @@ pipeline {
                 echo 'Test results archived.'
             }
         }
-
-        stage('Cleanup Resources') {  // New stage to cleanup resources
-            steps {
-                echo 'Cleaning up resources...'
-                script {
-                    sh 'rm -rf node_modules package-lock.json Results'  // Adjust according to your resource needs
-                    echo 'Resources cleaned up.'
-                }
-            }
-        }
     }
 
     post {
+        always { // Thực hiện luôn sau khi kết thúc các bước trước đó
+            script {
+                echo 'Cleaning up resources...'
+                // Xóa tất cả các tài nguyên đã tải
+                sh """
+                    cd ${env.REPO_PATH}
+                    rm -rf node_modules package-lock.json
+                    echo 'Resources cleaned.'
+                """
+            }
+        }
+
         success {
             script {
                 def status = currentBuild.result ?: 'SUCCESS'

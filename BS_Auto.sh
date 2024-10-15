@@ -11,10 +11,15 @@ TEST_OUTPUT_LOG="test_output.log"
 echo "Bắt đầu thực hiện kiểm tra các test case"
 npx playwright test TG_ActionsALLLogic.spec.js TG_Checkmenubar.spec.js TG_CheckPageFooter.spec.js --reporter=dot --output=./Results --workers=1 | tee -a $TEST_OUTPUT_LOG
 
-# Đếm tổng số testcase, passed và failed
-totalTestCases=$(grep -oP '(?<=running\s)\d+(?=\stests)' $TEST_OUTPUT_LOG | head -1)
-passedTestCases=$(grep -oP '(?<=\spassed\s)\d+(?=\stests)' $TEST_OUTPUT_LOG | head -1)
-failedTestCases=$(grep -oP '(?<=\sfailed\s)\d+(?=\stests)' $TEST_OUTPUT_LOG | head -1)
+# Phân tích kết quả từ output của Playwright
+totalTestCases=$(grep -oP '(?<=Running\s)\d+(?=\stests)' $TEST_OUTPUT_LOG)
+passedTestCases=$(grep -oP '\d+(?=\spassed)' $TEST_OUTPUT_LOG)
+failedTestCases=$(grep -oP '\d+(?=\sfailed)' $TEST_OUTPUT_LOG)
+
+# Nếu giá trị rỗng, đặt chúng về 0
+totalTestCases=${totalTestCases:-0}
+passedTestCases=${passedTestCases:-0}
+failedTestCases=${failedTestCases:-0}
 
 # Ghi tên các test case thất bại vào file log
 grep "FAILED" $TEST_OUTPUT_LOG >> $LOG_FILE

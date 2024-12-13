@@ -1,22 +1,21 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs/promises";
 
-test.describe("Tongram Actions", () => {
+test.describe("Các hành động của Tongram", () => {
   let page;
 
   // Bước đăng nhập vào Telegram với cookies
-  test("Đăng nhập với Telegram và Thực hiện hành động", async ({ browser }) => {
-    await test.step("Đăng nhập với Telegram", async () => {
+  test("Đăng nhập với Telegram và thực hiện các hành động", async ({
+    browser,
+  }) => {
+    await test.step("Đăng nhập vào Telegram", async () => {
       try {
-        // Đọc cookie từ tệp JSON
         const cookies = JSON.parse(
-          await fs.readFile("./Cookies/cookies_tongram.json", "utf-8")
+          await fs.readFile("../Cookies/cookies_tongram.json", "utf-8")
         );
 
         const context = await browser.newContext();
         await context.addCookies(cookies);
-
-        // Mở trang web Tongram
         page = await context.newPage();
         await page.goto("https://tongram.app/en");
         await page.waitForLoadState("networkidle");
@@ -33,48 +32,85 @@ test.describe("Tongram Actions", () => {
 
     // Thực hiện các hành động trên trang sau khi đăng nhập
     await test.step("Thực hiện các hành động trên trang", async () => {
-      const page1Promise = page.waitForEvent("popup");
+      if (!page) {
+        console.error(
+          "Trang chưa được khởi tạo, không thể thực hiện các hành động."
+        );
+        return; // Dừng test nếu trang chưa được khởi tạo
+      }
 
-      // Nhấp nút "Log In" để mở popup đăng nhập
-      await page.getByRole("button", { name: "Log In" }).click();
-      const page1 = await page1Promise;
-
-      // Điền số điện thoại đăng nhập
-      await page1.locator("#login-phone").fill("0343602871");
-      await page1.getByRole("button", { name: "Next" }).click();
-
-      // Điều hướng và thực hiện các hành động trên trang
       await page.goto("https://tongram.app/");
+      await page.waitForLoadState("networkidle"); // Chờ trang tải
+
       await page.getByRole("button", { name: "Liêu Duy Thanh" }).click();
+      await page.waitForLoadState("networkidle");
+
       await page.getByRole("button", { name: "Management" }).click();
-      await page.getByRole("button", { name: "Earn" }).click();
-      await page.getByRole("button", { name: "Submit App" }).click();
+      await page.waitForLoadState("networkidle");
+
+      await page.getByRole("button", { name: "Liêu Duy Thanh" }).click();
+      const earnButton = page.getByRole("button", { name: "Earn" });
+      await earnButton.waitFor({ state: "visible" });
+      await earnButton.click();
+      await page.waitForLoadState("networkidle");
+
+      await page.getByRole("button", { name: "Liêu Duy Thanh" }).click();
+      const submitButton = page.getByRole("button", { name: "Submit App" });
+      await submitButton.waitFor({ state: "visible" });
+      await submitButton.click();
+      await page.waitForLoadState("networkidle");
+
+      await page.getByRole("button", { name: "Liêu Duy Thanh" }).click();
       await page.getByRole("button", { name: "My Apps" }).click();
+      await page.waitForLoadState("networkidle");
 
-      // Thao tác với các danh mục (Categories)
+      await page.getByRole("button", { name: "Liêu Duy Thanh" }).click();
       await page.getByRole("button", { name: "Categories" }).click();
-      await page.getByRole("link", { name: "Games Games" }).click();
-      await page.getByRole("button", { name: "Categories" }).click();
-      await page
-        .getByRole("link", { name: "Productivity Productivity" })
-        .click();
-      await page.getByRole("button", { name: "Categories" }).click();
-      await page.getByRole("link", { name: "Social Social" }).click();
-      await page.getByRole("button", { name: "Categories" }).click();
-      await page
-        .getByRole("link", { name: "Entertainment Entertainment" })
-        .click();
-      await page.getByRole("button", { name: "Categories" }).click();
-      await page.getByRole("link", { name: "Finance Finance" }).click();
-      await page.getByRole("button", { name: "Categories" }).click();
-      await page.getByRole("link", { name: "Education Education" }).click();
-      await page.getByRole("button", { name: "Categories" }).click();
-      await page.getByRole("link", { name: "Lifestyle Lifestyle" }).click();
-      await page.getByRole("button", { name: "Categories" }).click();
-      await page.getByRole("link", { name: "Management Management" }).click();
+      await page.waitForLoadState("networkidle");
 
-      // Nhấp vào các nút rating hoặc các tùy chọn khác
-      await page.getByRole("button", { name: "High rating" }).click();
+      const categories = [
+        "Games Games",
+        "Productivity Productivity",
+        "Social Social",
+        "Entertainment Entertainment",
+        "Finance Finance",
+        "Education Education",
+        "Lifestyle Lifestyle",
+        "Management Management",
+      ];
+
+      // Kiểm tra và mở tên game cụ thể
+      for (const category of categories) {
+        const categoryLink = page.getByRole("link", { name: category });
+        await categoryLink.waitFor({ state: "visible" });
+        await categoryLink.click();
+        await page.waitForLoadState("networkidle");
+
+        // Tìm kiếm tên game
+        const gameName = "PISTON Hub"; // Tên game bạn muốn tìm
+        const gameLink = page.getByRole("link", { name: gameName });
+
+        // Kiểm tra xem tên game có tồn tại không
+        if (await gameLink.isVisible()) {
+          console.log(`Tìm thấy game: ${gameName}`);
+          await gameLink.click(); // Nhấp vào liên kết game
+          await page.waitForLoadState("networkidle"); // Chờ trang tải
+          // Thực hiện các hành động tiếp theo trên trang game nếu cần
+
+          // Quay lại trang danh sách game
+          await page.goBack();
+          await page.waitForLoadState("networkidle"); // Chờ trang tải
+        } else {
+          console.log(`Không tìm thấy game: ${gameName}`);
+        }
+
+        // Quay lại trang danh mục
+        await page.getByRole("button", { name: "Categories" }).click();
+        await page.waitForLoadState("networkidle"); // Chờ trang tải
+      }
+
+      // await context.close(); // Đóng ngữ cảnh
+      await browser.close(); // Đóng trình duyệt
     });
   });
 });

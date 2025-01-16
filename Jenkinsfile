@@ -89,7 +89,7 @@ pipeline {
                         if (failedTestCases.toInteger() > 0) {
                             failedTestCasesNames = sh(script: "grep 'FAILED' test_results.log | awk '{print \$2}'", returnStdout: true).split('\n')
                         }
-
+                        
                         echo "Total: ${totalTestCases}, Passed: ${passedTestCases}, Failed: ${failedTestCases}"
 
                         // Gửi thông báo qua Telegram

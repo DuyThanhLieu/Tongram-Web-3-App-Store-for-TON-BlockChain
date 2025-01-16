@@ -2,12 +2,12 @@
 # yarn lockfile v1
 
 
-"@playwright/test@^1.47.2":
-  version "1.47.2"
-  resolved "https://registry.npmjs.org/@playwright/test/-/test-1.47.2.tgz"
-  integrity sha512-jTXRsoSPONAs8Za9QEQdyjFn+0ZQFjCiIztAIF6bi1HqhBzG9Ma7g1WotyiGqFSBRZjIEqMdT8RUlbk1QVhzCQ==
+"@playwright/test@^1.48.1":
+  version "1.48.1"
+  resolved "https://registry.npmjs.org/@playwright/test/-/test-1.48.1.tgz"
+  integrity sha512-s9RtWoxkOLmRJdw3oFvhFbs9OJS0BzrLUc8Hf6l2UdCNd1rqeEyD4BhCJkvzeEoD1FsK4mirsWwGerhVmYKtZg==
   dependencies:
-    playwright "1.47.2"
+    playwright "1.48.1"
 
 "@types/node@^22.7.4":
   version "22.7.4"
@@ -50,17 +50,17 @@ node-fetch@^3.3.2:
     fetch-blob "^3.1.4"
     formdata-polyfill "^4.0.10"
 
-playwright-core@1.47.2:
-  version "1.47.2"
-  resolved "https://registry.npmjs.org/playwright-core/-/playwright-core-1.47.2.tgz"
-  integrity sha512-3JvMfF+9LJfe16l7AbSmU555PaTl2tPyQsVInqm3id16pdDfvZ8TTZ/pyzmkbDrZTQefyzU7AIHlZqQnxpqHVQ==
+playwright-core@1.48.1:
+  version "1.48.1"
+  resolved "https://registry.npmjs.org/playwright-core/-/playwright-core-1.48.1.tgz"
+  integrity sha512-Yw/t4VAFX/bBr1OzwCuOMZkY1Cnb4z/doAFSwf4huqAGWmf9eMNjmK7NiOljCdLmxeRYcGPPmcDgU0zOlzP0YA==
 
-playwright@1.47.2:
-  version "1.47.2"
-  resolved "https://registry.npmjs.org/playwright/-/playwright-1.47.2.tgz"
-  integrity sha512-nx1cLMmQWqmA3UsnjaaokyoUpdVaaDhJhMoxX2qj3McpjnsqFHs516QAKYhqHAgOP+oCFTEOCOAaD1RgD/RQfA==
+playwright@1.48.1:
+  version "1.48.1"
+  resolved "https://registry.npmjs.org/playwright/-/playwright-1.48.1.tgz"
+  integrity sha512-j8CiHW/V6HxmbntOfyB4+T/uk08tBy6ph0MpBXwuoofkSnLmlfdYNNkFTYD6ofzzlSqLA1fwH4vwvVFvJgLN0w==
   dependencies:
-    playwright-core "1.47.2"
+    playwright-core "1.48.1"
   optionalDependencies:
     fsevents "2.3.2"
 
